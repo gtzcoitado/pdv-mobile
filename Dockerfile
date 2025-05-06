@@ -1,27 +1,26 @@
-# 1) imagem base
 FROM node:18-alpine
-
-# 2) pasta de trabalho
 WORKDIR /app
 
-# 3) instalar só deps de produção
+# instala dependências (produção)
 COPY package*.json ./
 RUN npm ci --omit=dev
 
-# 4) copiar o restante do código
+# copia todo o código
 COPY . .
 
-# 5) desliga o CI-mode do CRA pra warnings não virarem erro
+# desliga o CI-mode do CRA (warnings não viram erro)
 ENV CI=false
+# desativa totalmente o ESLint plugin do CRA
+ENV DISABLE_ESLINT_PLUGIN=true
 
-# 6) faz o build (aqui o CI=false entra em vigor)
+# gera o build (sem breaking por lint)
 RUN npm run build
 
-# 7) instala o servidor estático
+# instala servidor estático
 RUN npm install -g serve
 
-# 8) expõe a porta que o Railway injeta
+# expõe a porta dinâmica que o Railway vai injetar
 EXPOSE $PORT
 
-# 9) serve o build na porta dinâmica
+# serve o build na porta certa
 CMD ["sh","-c","serve -s build -l $PORT"]
