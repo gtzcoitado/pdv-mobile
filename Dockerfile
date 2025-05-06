@@ -1,18 +1,22 @@
 FROM node:18-alpine
 WORKDIR /app
 
-# instala deps
 COPY package*.json ./
 RUN npm ci --omit=dev
 
-# copia código e builda
 COPY . .
+
+# 🔥 impede que CRA trate warnings como erros
+ENV CI=false
+
+# gera o build
 RUN npm run build
 
-# instala um servidor estático
+# instala servidor estático
 RUN npm install -g serve
 
-# instrui o container a usar qualquer PORT que o Railway passar
-# (o shell vai expandir $PORT na hora do runtime)
+# expõe a porta que o Railway injetar
 EXPOSE $PORT
+
+# usa a porta dinâmica na hora de servir
 CMD ["sh","-c","serve -s build -l $PORT"]
