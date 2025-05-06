@@ -1,25 +1,19 @@
+// server.js
 require('dotenv').config();
 const express  = require('express');
 const mongoose = require('mongoose');
 const cors     = require('cors');
-const path     = require('path');
 
 const app = express();
 
-// --- 1) CORS ---
-// Em produção, vai ler a URL do frontend via env FRONTEND_URL.
-// Em dev/local, use '*' pra facilitar.
-const allowedOrigin = process.env.FRONTEND_URL || '*';
-app.use(cors({
-  origin: allowedOrigin,
-  credentials: true
-}));
+// 🔥 libera CORS para qualquer origem
+app.use(cors());
 
-// Parsers
+// parsers
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// --- 2) Conexão com MongoDB ---
+// --- Conexão ao MongoDB ---
 mongoose
   .connect(process.env.MONGO_URI, {
     useNewUrlParser:    true,
@@ -28,17 +22,17 @@ mongoose
   .then(() => console.log('✅ MongoDB conectado'))
   .catch(err => console.error('❌ Erro ao conectar MongoDB:', err));
 
-// --- 3) Schemas & Models ---
-const groupSchema = new mongoose.Schema({ name: String });
+// --- Schemas & Models ---
+const groupSchema    = new mongoose.Schema({ name: String });
 const employeeSchema = new mongoose.Schema({ name: String });
-const productSchema = new mongoose.Schema({
+const productSchema  = new mongoose.Schema({
   name:     String,
   price:    Number,
   group:    { type: mongoose.Schema.Types.ObjectId, ref: 'Group' },
   minStock: { type: Number, default: 0 },
   stock:    { type: Number, default: 0 }
 });
-const saleSchema = new mongoose.Schema({
+const saleSchema     = new mongoose.Schema({
   items: [{
     product:  String,
     quantity: Number,
@@ -59,7 +53,7 @@ const Employee = mongoose.model('Employee', employeeSchema);
 const Product  = mongoose.model('Product', productSchema);
 const Sale     = mongoose.model('Sale', saleSchema);
 
-// --- 4) Rotas CRUD ---
+// --- Rotas CRUD ---
 
 // Groups
 app.get('/groups',       async (_, res) => res.json(await Group.find()));
@@ -129,9 +123,8 @@ app.delete('/products/:id',    async (req, res) => {
 app.get('/sales',    async (_, res) => res.json(await Sale.find()));
 app.post('/sales',   async (req, res) => res.status(201).json(await Sale.create(req.body)));
 
-// --- 5) Start Server ---
+// --- Start Server ---
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`🚀 Server rodando na porta ${PORT}`);
-  console.log(`🌐 CORS liberado para: ${allowedOrigin}`);
 });
