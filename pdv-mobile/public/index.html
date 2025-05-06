@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PDV NEW RIFT</title>
+
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              'brand-red':    '#B22222',
+              'brand-blue':   '#4169E1',
+              'brand-dark':   '#0F143F',
+              'brand-light':  '#E5E7EB'
+            }
+          }
+        }
+      }
+    </script>
+  </head>
+  <body class="min-h-screen text-gray-900 antialiased">    <div id="root"></div>
+    <!-- O build do React vai injetar seus scripts aqui -->
+  </body>
+</html>
