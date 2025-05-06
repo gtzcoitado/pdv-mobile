@@ -1,5 +1,5 @@
 // src/screens/ProductForm.js
-import React, { useContext, useState, useMemo, useRef, useEffect } from 'react';
+import React, { useContext, useState, useMemo} from 'react';
 import { DataContext } from '../contexts/DataContext';
 
 export default function ProductForm() {

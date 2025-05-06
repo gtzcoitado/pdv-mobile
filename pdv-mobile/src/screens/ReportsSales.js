@@ -11,7 +11,6 @@ export default function ReportsSales() {
   // filtros de data, grupo e forma de pagamento
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
-  const [filterGroup, setFilterGroup] = useState('all');
   const [payFilter, setPayFilter] = useState({
     debit: false,
     credit: false,
@@ -27,9 +26,6 @@ export default function ReportsSales() {
     else dt.setHours(0, 0, 0, 0);
     return dt;
   };
-
-  // opções de grupos
-  const groupOptions = [{ _id: 'all', name: 'Todos os grupos' }, ...groups];
 
   // vendas após todos os filtros
   const filtered = useMemo(() => {
@@ -59,7 +55,7 @@ export default function ReportsSales() {
 
       return true;
     });
-  }, [sales, from, to, filterGroup, payFilter, products]);
+  }, [sales, from, to, payFilter, products]);
 
   // resumo
   const summary = useMemo(() => {
