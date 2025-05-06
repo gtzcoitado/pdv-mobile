@@ -17,6 +17,8 @@ export function DataProvider({ children }) {
   const fetchEmployees = async () => { const r = await axios.get(`${API}/employees`); setEmployees(r.data); };
   const fetchProducts  = async () => { const r = await axios.get(`${API}/products`);  setProducts(r.data); };
   const fetchSales     = async () => { const r = await axios.get(`${API}/sales`);     setSales(r.data); };
+  console.log("🔗 Fetching from:", API);
+
 
   useEffect(() => {
     fetchGroups();

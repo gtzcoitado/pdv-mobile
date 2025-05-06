@@ -1,27 +1,42 @@
 require('dotenv').config();
-const express = require('express');
+const express  = require('express');
 const mongoose = require('mongoose');
-const cors = require('cors');
+const cors     = require('cors');
+const path     = require('path');
 
 const app = express();
-app.use(cors());
+
+// --- 1) CORS ---
+// Em produção, vai ler a URL do frontend via env FRONTEND_URL.
+// Em dev/local, use '*' pra facilitar.
+const allowedOrigin = process.env.FRONTEND_URL || '*';
+app.use(cors({
+  origin: allowedOrigin,
+  credentials: true
+}));
+
+// Parsers
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// 1) Conexão com Mongo
+// --- 2) Conexão com MongoDB ---
 mongoose
-  .connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log('✅ Mongo conectado'))
-  .catch(err => console.error('❌ Erro Mongo:', err));
+  .connect(process.env.MONGO_URI, {
+    useNewUrlParser:    true,
+    useUnifiedTopology: true,
+  })
+  .then(() => console.log('✅ MongoDB conectado'))
+  .catch(err => console.error('❌ Erro ao conectar MongoDB:', err));
 
-// 2) Schemas e Models
+// --- 3) Schemas & Models ---
 const groupSchema = new mongoose.Schema({ name: String });
 const employeeSchema = new mongoose.Schema({ name: String });
 const productSchema = new mongoose.Schema({
-  name: String,
-  price: Number,
-  group: { type: mongoose.Schema.Types.ObjectId, ref: 'Group' },
+  name:     String,
+  price:    Number,
+  group:    { type: mongoose.Schema.Types.ObjectId, ref: 'Group' },
   minStock: { type: Number, default: 0 },
-  stock: { type: Number, default: 0 }
+  stock:    { type: Number, default: 0 }
 });
 const saleSchema = new mongoose.Schema({
   items: [{
@@ -39,123 +54,84 @@ const saleSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
+const Group    = mongoose.model('Group', groupSchema);
+const Employee = mongoose.model('Employee', employeeSchema);
+const Product  = mongoose.model('Product', productSchema);
+const Sale     = mongoose.model('Sale', saleSchema);
 
-const Group   = mongoose.model('Group', groupSchema);
-const Employee= mongoose.model('Employee', employeeSchema);
-const Product = mongoose.model('Product', productSchema);
-const Sale    = mongoose.model('Sale', saleSchema);
-
-// 3) Rotas CRUD
+// --- 4) Rotas CRUD ---
 
 // Groups
-
-app.get('/groups', async (_, res) => {
-  const grupos = await Group.find();
-  res.json(grupos);
-});
-
-app.post('/groups', async (req, res) => {
-  const novo = await Group.create(req.body);
-  res.status(201).json(novo);
-});
-
-// **Editar grupo**
-app.put('/groups/:id', async (req, res) => {
-  const { id } = req.params;
-  const { name } = req.body;
-  const grp = await Group.findByIdAndUpdate(id, { name }, { new: true });
+app.get('/groups',       async (_, res) => res.json(await Group.find()));
+app.post('/groups',      async (req, res) => res.status(201).json(await Group.create(req.body)));
+app.put('/groups/:id',   async (req, res) => {
+  const grp = await Group.findByIdAndUpdate(req.params.id, { name: req.body.name }, { new: true });
   if (!grp) return res.status(404).json({ error: 'Grupo não encontrado' });
   res.json(grp);
 });
-
-// **Excluir grupo**
 app.delete('/groups/:id', async (req, res) => {
   await Group.findByIdAndDelete(req.params.id);
   res.json({ success: true });
 });
 
 // Employees
-
-app.get('/employees', async (_, res) => {
-  const emps = await Employee.find();
-  res.json(emps);
-});
-app.post('/employees', async (req, res) => {
-  const novo = await Employee.create(req.body);
-  res.status(201).json(novo);
-});
-
-// **Editar funcionário**
-
-app.put('/employees/:id', async (req, res) => {
-  const { id } = req.params;
-  const { name, password } = req.body;
+app.get('/employees',       async (_, res) => res.json(await Employee.find()));
+app.post('/employees',      async (req, res) => res.status(201).json(await Employee.create(req.body)));
+app.put('/employees/:id',   async (req, res) => {
   const emp = await Employee.findByIdAndUpdate(
-    id,
-    { name, password },
+    req.params.id,
+    { name: req.body.name, password: req.body.password },
     { new: true }
   );
   if (!emp) return res.status(404).json({ error: 'Funcionário não encontrado' });
   res.json(emp);
 });
-
-// **Excluir funcionário**
-
 app.delete('/employees/:id', async (req, res) => {
   await Employee.findByIdAndDelete(req.params.id);
   res.json({ success: true });
 });
 
 // Products
-app.get('/products', async (_, res) => {
-  const prods = await Product.find().populate('group');
-  res.json(prods);
+app.get('/products',           async (_, res) => res.json(await Product.find().populate('group')));
+app.post('/products',          async (req, res) => {
+  const p = await Product.create(req.body);
+  await p.populate('group');
+  res.status(201).json(p);
 });
-app.post('/products', async (req, res) => {
-  let novo = await Product.create(req.body);
-  await novo.populate('group');
-  res.status(201).json(novo);
-});
-// atualizar produto
-app.put('/products/:id', async (req, res) => {
-  const { id } = req.params;
-  const { name, price, group, minStock } = req.body;
+app.put('/products/:id',       async (req, res) => {
   const prod = await Product.findByIdAndUpdate(
-    id,
-    { name, price, group, minStock },
+    req.params.id,
+    {
+      name:     req.body.name,
+      price:    req.body.price,
+      group:    req.body.group,
+      minStock: req.body.minStock
+    },
     { new: true }
   ).populate('group');
   if (!prod) return res.status(404).json({ error: 'Produto não encontrado' });
   res.json(prod);
 });
-// ajuste de estoque
 app.patch('/products/:id/stock', async (req, res) => {
-  const { id } = req.params;
-  const { adjustment } = req.body;
-  const prod = await Product.findById(id);
+  const prod = await Product.findById(req.params.id);
   if (!prod) return res.status(404).json({ error: 'Produto não encontrado' });
-  prod.stock = (prod.stock || 0) + adjustment;
+  prod.stock = (prod.stock || 0) + req.body.adjustment;
   await prod.save();
   await prod.populate('group');
   res.json(prod);
 });
-// excluir produto
-app.delete('/products/:id', async (req, res) => {
-  const { id } = req.params;
-  await Product.findByIdAndDelete(id);
+app.delete('/products/:id',    async (req, res) => {
+  await Product.findByIdAndDelete(req.params.id);
   res.json({ success: true });
 });
 
 // Sales
-app.get('/sales', async (_, res) => {
-  const vendas = await Sale.find();
-  res.json(vendas);
-});
-app.post('/sales', async (req, res) => {
-  const nova = await Sale.create(req.body);
-  res.status(201).json(nova);
-});
+app.get('/sales',    async (_, res) => res.json(await Sale.find()));
+app.post('/sales',   async (req, res) => res.status(201).json(await Sale.create(req.body)));
 
-// 4) Start server
+// --- 5) Start Server ---
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => console.log(`🚀 Server rodando na porta ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`🚀 Server rodando na porta ${PORT}`);
+  console.log(`🌐 CORS liberado para: ${allowedOrigin}`);
+});
