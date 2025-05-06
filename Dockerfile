@@ -1,27 +1,27 @@
-# 1. Base image
+# 1) imagem base
 FROM node:18-alpine
 
-# 2. Diretório de trabalho
+# 2) pasta de trabalho
 WORKDIR /app
 
-# 3. Copiar package.json e lockfile e instalar deps
+# 3) instalar só deps de produção
 COPY package*.json ./
 RUN npm ci --omit=dev
 
-# 4. Copiar o restante do código
+# 4) copiar o restante do código
 COPY . .
 
-# 5. DESABILITAR CI PARA CRA NÃO TRATAR WARNINGS COMO ERROS
+# 5) desliga o CI-mode do CRA pra warnings não virarem erro
 ENV CI=false
 
-# 6. Build da aplicação
+# 6) faz o build (aqui o CI=false entra em vigor)
 RUN npm run build
 
-# 7. Instalar o servidor estático
+# 7) instala o servidor estático
 RUN npm install -g serve
 
-# 8. Expor a PORT dinâmica que o Railway define
+# 8) expõe a porta que o Railway injeta
 EXPOSE $PORT
 
-# 9. Comando de inicialização usando a porta correta
+# 9) serve o build na porta dinâmica
 CMD ["sh","-c","serve -s build -l $PORT"]
