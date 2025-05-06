@@ -1,20 +1,18 @@
-# Usando Node oficial
 FROM node:18-alpine
-
 WORKDIR /app
+
+# instala deps
 COPY package*.json ./
-RUN npm ci
+RUN npm ci --omit=dev
 
+# copia código e builda
 COPY . .
-
-# Desliga o CI-mode para CRA não falhar em warnings
-ENV CI=false
-
-# Gera o build
 RUN npm run build
 
-# Serve a pasta build
+# instala um servidor estático
 RUN npm install -g serve
 
-EXPOSE 3000
-CMD ["serve", "-s", "build", "-l", "3000"]
+# instrui o container a usar qualquer PORT que o Railway passar
+# (o shell vai expandir $PORT na hora do runtime)
+EXPOSE $PORT
+CMD ["sh","-c","serve -s build -l $PORT"]
